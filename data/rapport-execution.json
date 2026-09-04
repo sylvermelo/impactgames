@@ -1,0 +1,24 @@
+{
+ "horodatage": "2026-09-04T19:00:40",
+ "sources": {
+  "tennis": {
+   "sport": "tennis",
+   "fichiers": 14,
+   "source": "github"
+  },
+  "hockey": {
+   "sport": "hockey",
+   "matchs": 7428,
+   "recus": 8772
+  },
+  "basket": {
+   "sport": "basket",
+   "matchs": 0,
+   "erreur": "aucun_match"
+  }
+ },
+ "etapes": {
+  "entrainement": "ok",
+  "application_publiable": true
+ }
+}
