@@ -1,0 +1,92 @@
+# Mise à jour automatique — serveurs GitHub, aucun PC à laisser allumé.
+# Toutes les 3 h à :30 (06:30 UTC = 07:30 à Cotonou), plus bouton manuel.
+
+name: Mise à jour
+
+on:
+  schedule:
+    - cron: '30 */3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main, arena/01a06d4a-impactgames ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  mise-a-jour:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Restaurer le cache des données
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: donnees-v1-${{ github.run_id }}
+          restore-keys: |
+            donnees-v1-
+
+      - name: Télécharger, entraîner, calendrier, HTML
+        run: python maj.py
+
+      - name: Vérifier le fichier autonome
+        run: |
+          test -f impactgames-autonome.html || { echo "FICHIER ABSENT"; exit 1; }
+          SIZE=$(stat -c%s impactgames-autonome.html)
+          echo "Taille : $SIZE octets"
+          if [ "$SIZE" -lt 80000 ]; then
+            echo "ERREUR : fichier trop petit"; exit 1
+          fi
+          if [ "$SIZE" -gt 8000000 ]; then
+            echo "ERREUR : fichier trop gros"; exit 1
+          fi
+          grep -q "const DATA" impactgames-autonome.html || { echo "DONNÉES ABSENTES"; exit 1; }
+          echo "OK"
+
+      - name: Préparer le site
+        run: |
+          mkdir -p site
+          cp impactgames-autonome.html site/index.html
+          cp impactgames-autonome.html site/impactgames-autonome.html
+          cp GUIDE.md site/GUIDE.md 2>/dev/null || true
+          cp README.md site/README.md 2>/dev/null || true
+
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Envoyer
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Publier
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Récapitulatif
+        if: always()
+        run: |
+          echo "## Impact Games — mise à jour" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/maj.log ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -20 data/maj.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
