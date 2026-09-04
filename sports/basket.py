@@ -29,6 +29,9 @@ T et D étant corrélés (un match rapide produit à la fois plus de points et,
 souvent, un écart plus large), on estime explicitement leur corrélation.
 
 Source : endpoints publics de `stats.nba.com`, sans clé API.
+Quand cette source ne répond pas, `sources.py` retombe sur le scoreboard
+ESPN ; le format du fichier `data/nba_matchs.csv` est le même dans les
+deux cas.
 """
 from __future__ import annotations
 

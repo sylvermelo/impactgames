@@ -126,19 +126,51 @@ jobs:
           cp CONCEPTION.md site/CONCEPTION.md 2>/dev/null || true
 
       - name: Configurer GitHub Pages
+        id: pages
+        # On ne s'arrête pas ici : si Pages refuse, on veut d'abord écrire POURQUOI
+        # dans data/pages.log, que l'étape « Rapatrier » re-committera. Les
+        # journaux Actions ne sont pas téléchargeables de partout.
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           # Pages n'est pas encore activé sur ce dépôt : on l'active nous-mêmes
           # au lieu de faire échouer le déploiement (droit pages: write).
           enablement: true
 
+      - name: Expliquer pourquoi Pages a refusé
+        if: steps.pages.outcome == 'failure'
+        run: |
+          {
+            echo "=== état de Pages sur ce dépôt ==="
+            curl -sS -w '\nHTTP %{http_code}\n' \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pages"
+            echo
+            echo "=== tentative d'activation (build_type: workflow) ==="
+            curl -sS -w '\nHTTP %{http_code}\n' -X POST \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              -d '{"build_type":"workflow"}' \
+              "https://api.github.com/repos/${{ github.repository }}/pages"
+            echo
+            echo "=== droits réellement accordés au jeton ==="
+            curl -sS -D - -o /dev/null \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              "https://api.github.com/repos/${{ github.repository }}" \
+              | grep -i '^x-oauth-scopes\|^x-accepted-github-permissions' || true
+          } > data/pages.log 2>&1
+          echo "----- data/pages.log -----"; cat data/pages.log
+
       - name: Envoyer le site
+        if: steps.pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
       - name: Publier
         id: deployment
+        if: steps.pages.outcome == 'success'
         uses: actions/deploy-pages@v4
 
       # Les journaux Actions ne sont pas téléchargeables de partout : on
@@ -150,7 +182,7 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           # fichier par fichier : `git add -f a b` échoue EN BLOC si `a` manque,
           # ce qui faisait silently disparaître tests.log du commit
-          for f in data/rapport-execution.json data/tests.log; do
+          for f in data/rapport-execution.json data/tests.log data/pages.log; do
             if [ -f "$f" ]; then git add -f "$f"; else echo "absent : $f"; fi
           done
           echo "--- index ---"; git status --short
@@ -174,5 +206,17 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "L'application est disponible quelques secondes après la fin," >> $GITHUB_STEP_SUMMARY
-          echo "à l'adresse indiquée dans Settings → Pages." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.pages.outcome }}" = "success" ]; then
+            echo "Site publié : https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ GitHub Pages n'est pas activé" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Les données sont à jour, mais le site n'est pas en ligne." >> $GITHUB_STEP_SUMMARY
+            echo "À faire une fois : Settings → Pages → Source « GitHub Actions »." >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -20 data/pages.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            # Les données sont sauvegardées ; on échoue pour que l'absence de
+            # publication reste visible dans la liste des exécutions.
+            exit 1
+          fi

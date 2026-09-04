@@ -49,6 +49,15 @@ ENTETES_NBA = {**ENTETES,
                "x-nba-stats-origin": "stats",
                "x-nba-stats-token": "true"}
 
+# Source de secours du basket : le scoreboard ESPN. Vérifié le 2026-09-04 :
+# il accepte une plage de dates (dates=20250217-20250218 renvoie bien
+# « events: [] », les deux jours tombant pendant la pause du All-Star Game) et
+# ne demande ni clé ni en-tête particulier.
+ESPN_BASKET = ("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/"
+               "scoreboard?dates={a}-{b}&limit=100")
+FENETRE_ESPN = 5              # 5 jours ≈ 75 matchs, sous la limite de 100
+PAUSE_ESPN = 0.12             # politesse entre deux requêtes
+
 ANNEES_TENNIS = range(2013, dt.date.today().year + 1)
 SAISONS_HOCKEY = 6            # saisons NHL conservées
 SAISONS_BASKET = 6            # saisons NBA conservées
@@ -59,6 +68,9 @@ SAISONS_BASKET = 6            # saisons NBA conservées
 BUDGET_HOCKEY = 180
 BUDGET_BASKET = 240
 BUDGET_TENNIS = 300
+# Budget distinct pour le repli ESPN du basket : si on le partageait avec
+# stats.nba.com, une source qui traîne laisserait zéro seconde au repli.
+BUDGET_REPLI_BASKET = 180
 MAX_PAGES = 12                # 12 × 1000 matchs : très au-delà du besoin réel
 
 
@@ -69,6 +81,10 @@ DERNIERES_ERREURS: list[str] = []
 
 
 def _get(url: str, entetes=None, timeout=45) -> bytes | None:
+    # La liste alimente le rapport d'exécution : on garde le début (la première
+    # erreur est la plus parlante) et la fin, sans jamais croître sans limite.
+    if len(DERNIERES_ERREURS) >= 40:
+        del DERNIERES_ERREURS[10:-10]
     try:
         req = urllib.request.Request(url, headers=entetes or ENTETES)
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -285,6 +301,76 @@ def maj_hockey(dossier: Path = DATA, saisons: int = SAISONS_HOCKEY) -> dict:
 
 
 # ==================================================================== BASKET
+def _lignes_basket(par_match: dict) -> list[dict]:
+    """Ne garde que les matchs complets (deux scores, deux équipes distinctes)."""
+    lignes = [v for v in par_match.values()
+              if {"date", "domicile", "exterieur", "pts_dom", "pts_ext"} <= set(v)
+              and v["domicile"] != v["exterieur"]]
+    lignes.sort(key=lambda v: v["date"])
+    return lignes
+
+
+def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
+    """Repli : lit le scoreboard ESPN, fenêtre de quelques jours par fenêtre.
+
+    `stats.nba.com` renvoie 0 match dans le job GitHub (il bloque les requêtes
+    qui ne viennent pas d'un navigateur). ESPN fournit les mêmes informations :
+    score final, équipes, date, et le nombre de périodes — donc les
+    prolongations. On part du plus récent vers le plus ancien, pour qu'une
+    coupure de budget conserve d'abord les saisons utiles.
+    """
+    print("    → repli sur le scoreboard ESPN")
+    par_match: dict[str, dict] = {}
+    b = jusqu_a
+    while b >= depart and time.time() < budget:
+        a = max(b - dt.timedelta(days=FENETRE_ESPN - 1), depart)
+        if a.month in (7, 8, 9) and b.month in (7, 8, 9):
+            b = a - dt.timedelta(days=1)
+            continue                            # intersaison : aucun match
+        url = ESPN_BASKET.format(a=a.strftime("%Y%m%d"), b=b.strftime("%Y%m%d"))
+        brut = _get(url, timeout=20)
+        if brut:
+            try:
+                evs = json.loads(brut).get("events", [])
+            except (json.JSONDecodeError, AttributeError):
+                evs = []
+            for ev in evs:
+                comps = ev.get("competitions") or []
+                if not comps:
+                    continue
+                c0 = comps[0]
+                if not ((c0.get("status") or {}).get("type") or {}).get("completed"):
+                    continue                    # match à venir ou en cours
+                dom = ext = None
+                for c in c0.get("competitors", []):
+                    if c.get("homeAway") == "home":
+                        dom = c
+                    elif c.get("homeAway") == "away":
+                        ext = c
+                if not dom or not ext:
+                    continue
+                try:
+                    pts_d, pts_e = int(dom.get("score")), int(ext.get("score"))
+                except (TypeError, ValueError):
+                    continue
+                nom = lambda c: ((c.get("team") or {}).get("abbreviation") or "").strip()
+                if not nom(dom) or not nom(ext) or nom(dom) == nom(ext):
+                    continue
+                date = str(ev.get("date") or "")[:10]
+                if len(date) != 10:
+                    continue
+                annee = int(date[:4]) - (1 if int(date[5:7]) < 10 else 0)
+                par_match[ev.get("id") or f"{date}-{nom(dom)}"] = {
+                    "date": date, "saison": f"{annee}-{str(annee + 1)[-2:]}",
+                    "domicile": nom(dom), "exterieur": nom(ext),
+                    "pts_dom": pts_d, "pts_ext": pts_e}
+        b = a - dt.timedelta(days=1)            # fenêtre suivante, sans chevauchement
+        time.sleep(PAUSE_ESPN)
+    if time.time() >= budget:
+        print(f"    ! budget atteint, {len(par_match)} matchs récupérés")
+    return par_match
+
+
 def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
     """Aspire les relevés d'équipe NBA via `leaguegamefinder`.
 
@@ -309,7 +395,9 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
             url = ("https://stats.nba.com/stats/leaguegamefinder?"
                    f"LeagueID=00&Season={saison}&SeasonType="
                    f"{urllib.parse.quote_plus(type_)}&PlayerOrTeam=T")
-            brut = _get(url, ENTETES_NBA, timeout=60)
+            # 25 s et non 60 : une source qui traîne ne doit pas manger le
+            # budget du repli ESPN qui vient derrière.
+            brut = _get(url, ENTETES_NBA, timeout=25)
             if not brut:
                 continue
             try:
@@ -338,10 +426,15 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
                               "exterieur": moi.strip(), "pts_ext": pts})
             time.sleep(0.25)              # stats.nba.com limite le débit
 
-    lignes = [v for v in par_match.values()
-              if {"date", "domicile", "exterieur", "pts_dom", "pts_ext"} <= set(v)
-              and v["domicile"] != v["exterieur"]]
-    lignes.sort(key=lambda v: v["date"])
+    lignes = _lignes_basket(par_match)
+    repli = False
+    if not lignes:
+        # stats.nba.com n'a rien donné : on tente ESPN avant d'abandonner.
+        par_match = _maj_basket_espn(
+            dt.date(depart - saisons + 1, 10, 1), aujourdhui,
+            t_debut + BUDGET_BASKET + BUDGET_REPLI_BASKET)
+        lignes = _lignes_basket(par_match)
+        repli = True
     if not lignes:
         print("    ! aucun match reçu : le fichier existant est conservé")
         return {"sport": "basket", "matchs": 0, "erreur": "aucun_match",
@@ -353,9 +446,16 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
     for v in lignes:
         w.writerow([v["date"], v["saison"], v["domicile"], v["exterieur"],
                     v["pts_dom"], v["pts_ext"]])
-    _ecrire_atomic(dossier / "nba_matchs.csv", tampon.getvalue().encode("utf-8"))
-    print(f"    {len(lignes)} matchs NBA écrits")
-    return {"sport": "basket", "matchs": len(lignes)}
+    source = "espn" if repli else "stats.nba.com"
+    if not _ecrire_atomic(dossier / "nba_matchs.csv",
+                          tampon.getvalue().encode("utf-8")):
+        # Le fichier existant est conservé : il ne faut surtout pas annoncer
+        # une mise à jour qui n'a pas eu lieu.
+        return {"sport": "basket", "matchs": 0, "source": source,
+                "erreur": "fichier_non_ecrit", "recus": len(lignes)}
+    print(f"    {len(lignes)} matchs NBA écrits ({source})")
+    return {"sport": "basket", "matchs": len(lignes), "recus": len(par_match),
+            "source": source}
 
 
 # ================================================================== orchestre

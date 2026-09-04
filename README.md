@@ -39,7 +39,7 @@ Deux façons, aucune installation :
 toutes les 3 h, sur les serveurs de GitHub (gratuit, aucun ordinateur allumé)
 
   sources.py        télécharge ce qui a changé
-       │            tennis → archive GitHub · hockey → api.nhle.com · basket → stats.nba.com
+       │            tennis → archive GitHub · hockey → api.nhle.com · basket → stats.nba.com puis ESPN
        ▼
   entraine.py       ré-entraîne les trois moteurs
        ▼
@@ -143,7 +143,7 @@ Toutes gratuites, toutes sans clé API :
 | Sport | Résultats | Calendrier |
 |---|---|---|
 | Tennis | dépôt GitHub `Kadantte/tennis_atp`, fork de la base de Jeff Sackmann (l'original a disparu de GitHub en 2026) | ESPN |
-| Hockey | `api.nhle.com/stats/rest/en/game` — API officielle, 75 698 matchs | `api-web.nhle.com/v1/schedule` |
-| Basket | `stats.nba.com`, endpoints publics | ESPN |
+| Hockey | `api.nhle.com/stats/rest/en/game` — API officielle, filtrée sur les saisons régulières récentes | `api-web.nhle.com/v1/schedule` |
+| Basket | `stats.nba.com/stats/leaguegamefinder`, et en repli le scoreboard ESPN (`site.api.espn.com`) | ESPN |
 
 Merci à Jeff Sackmann pour trente ans de données de tennis patiemment rassemblées.
