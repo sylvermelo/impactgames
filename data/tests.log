@@ -1,0 +1,164 @@
+test_doublons_ignores (test_hockey_basket.TestBasketChargement.test_doublons_ignores) ... ok
+test_ligne_cassee_igneree (test_hockey_basket.TestBasketChargement.test_ligne_cassee_igneree) ... ok
+test_notes_somment_a_zero (test_hockey_basket.TestBasketEstimation.test_notes_somment_a_zero)
+Contrainte d'identifiabilité : la moyenne des notes doit être nulle. ... ok
+test_retrouve_avantage_domicile (test_hockey_basket.TestBasketEstimation.test_retrouve_avantage_domicile) ... ok
+test_retrouve_la_force_nette (test_hockey_basket.TestBasketEstimation.test_retrouve_la_force_nette) ... ok
+test_retrouve_le_rythme (test_hockey_basket.TestBasketEstimation.test_retrouve_le_rythme) ... ok
+test_retrouve_les_ecarts_types (test_hockey_basket.TestBasketEstimation.test_retrouve_les_ecarts_types)
+Le générateur tire T avec un écart-type de 19 et D avec 12,5 : ce ... ok
+test_deux_voies_somment_a_un (test_hockey_basket.TestBasketMarches.test_deux_voies_somment_a_un) ... ok
+test_ecart_attendu_coherent (test_hockey_basket.TestBasketMarches.test_ecart_attendu_coherent) ... ok
+test_equipe_inconnue (test_hockey_basket.TestBasketMarches.test_equipe_inconnue) ... ok
+test_favori_monotone (test_hockey_basket.TestBasketMarches.test_favori_monotone) ... ok
+test_handicap_complementaire (test_hockey_basket.TestBasketMarches.test_handicap_complementaire) ... ok
+test_over_under_complementaires (test_hockey_basket.TestBasketMarches.test_over_under_complementaires) ... ok
+test_pas_de_correction_de_continuite_sur_les_handicaps (test_hockey_basket.TestBasketMarches.test_pas_de_correction_de_continuite_sur_les_handicaps)
+Régression : à écart attendu nul, dom −6,5 doit valoir exactement 50 %. ... ok
+test_prolongation_representee (test_hockey_basket.TestBasketMarches.test_prolongation_representee) ... ok
+test_but_de_prolongation_retire (test_hockey_basket.TestHockeyChargement.test_but_de_prolongation_retire) ... ok
+test_fin_reglementaire_intacte (test_hockey_basket.TestHockeyChargement.test_fin_reglementaire_intacte) ... ok
+test_fusillade_1_0 (test_hockey_basket.TestHockeyChargement.test_fusillade_1_0)
+Une fusillade 1-0 n'a produit AUCUN but en jeu : 0-0 à 60 minutes. ... ok
+test_but_par_match_retrouve (test_hockey_basket.TestHockeyEstimation.test_but_par_match_retrouve)
+Comparer le total prédit au total RÉELLEMENT observé. ... ok
+test_buts_reels_dans_la_norme_nhl (test_hockey_basket.TestHockeyEstimation.test_buts_reels_dans_la_norme_nhl)
+Sanity check séparé : les DONNÉES de test doivent ressembler à du ... ok
+test_convergence (test_hockey_basket.TestHockeyEstimation.test_convergence) ... ok
+test_ordre_des_equipes (test_hockey_basket.TestHockeyEstimation.test_ordre_des_equipes)
+La meilleure équipe générée doit finir en tête du classement. ... ok
+test_retrouve_avantage_domicile (test_hockey_basket.TestHockeyEstimation.test_retrouve_avantage_domicile)
+Le générateur applique un avantage de 0,25 en log. Avec `b` seul ... ok
+test_retrouve_le_niveau_de_buts (test_hockey_basket.TestHockeyEstimation.test_retrouve_le_niveau_de_buts)
+C'est moyenne(a) qui porte le niveau de la ligue, pas γ. Le ... ok
+test_retrouve_les_forces (test_hockey_basket.TestHockeyEstimation.test_retrouve_les_forces)
+Corrélation entre forces réelles et forces estimées : doit être > 0,9. ... ok
+test_seule_b_est_ancree (test_hockey_basket.TestHockeyEstimation.test_seule_b_est_ancree) ... ok
+test_taux_de_prolongation_bien_calibre (test_hockey_basket.TestHockeyEstimation.test_taux_de_prolongation_bien_calibre)
+Le vrai test : la moyenne des prolongations prédites doit coller au ... ok
+test_double_chance_coherente (test_hockey_basket.TestHockeyMarches.test_double_chance_coherente) ... ok
+test_equipe_inconnue (test_hockey_basket.TestHockeyMarches.test_equipe_inconnue) ... ok
+test_handicap_complementaire (test_hockey_basket.TestHockeyMarches.test_handicap_complementaire) ... ok
+test_matrice_somme_a_un (test_hockey_basket.TestHockeyMarches.test_matrice_somme_a_un) ... ok
+test_moneyline_somme_a_un (test_hockey_basket.TestHockeyMarches.test_moneyline_somme_a_un) ... ok
+test_moneyline_superieur_au_temps_reglementaire (test_hockey_basket.TestHockeyMarches.test_moneyline_superieur_au_temps_reglementaire)
+Prolongation comprise, le domicile gagne plus souvent qu'à 60 min. ... ok
+test_over_under_complementaires (test_hockey_basket.TestHockeyMarches.test_over_under_complementaires) ... ok
+test_prolongation_realiste (test_hockey_basket.TestHockeyMarches.test_prolongation_realiste)
+Sur un match ÉQUILIBRÉ, 20 à 25 % des rencontres NHL vont au-delà ... ok
+test_trois_voies_somment_a_un (test_hockey_basket.TestHockeyMarches.test_trois_voies_somment_a_un) ... ok
+test_erreur_enregistree (test_sources.TestGetErreurs.test_erreur_enregistree) ... ok
+test_liste_bornee (test_sources.TestGetErreurs.test_liste_bornee)
+Des centaines d'appels ne doivent pas gonfler le rapport sans limite, ... ok
+test_bascule_sur_espn_et_ecrit_le_csv (test_sources.TestMajBasketRepli.test_bascule_sur_espn_et_ecrit_le_csv) ... ok
+test_echantillon_perime_supprime (test_sources.TestMajBasketRepli.test_echantillon_perime_supprime)
+Une fois les matchs lus, l'échantillon de diagnostic d'une exécution ... ok
+test_echec_des_deux_sources_diagnostique (test_sources.TestMajBasketRepli.test_echec_des_deux_sources_diagnostique)
+Une source muette ne doit plus ressembler à une source vide : ... ok
+test_fichier_non_ecrit_est_signale (test_sources.TestMajBasketRepli.test_fichier_non_ecrit_est_signale)
+Un CSV trop court pour être honnête n'est pas écrit : le rapport doit ... ok
+test_le_repli_a_un_budget_meme_si_stats_nba_a_tout_mange (test_sources.TestMajBasketRepli.test_le_repli_a_un_budget_meme_si_stats_nba_a_tout_mange)
+Régression : le repli partageait le budget de stats.nba.com. Une ... ok
+test_stats_nba_com_garde_la_priorite (test_sources.TestMajBasketRepli.test_stats_nba_com_garde_la_priorite)
+Si stats.nba.com répond, on ne dépense pas 400 requêtes ESPN. ... ok
+test_abandon_rapide_sur_403 (test_sources.TestRepliEspn.test_abandon_rapide_sur_403)
+Depuis les serveurs de GitHub, stats.nba.com ET ESPN répondent 403 ... ok
+test_du_plus_recent_vers_le_plus_ancien (test_sources.TestRepliEspn.test_du_plus_recent_vers_le_plus_ancien)
+Si le budget s'épuise, il faut avoir gardé les saisons utiles. ... ok
+test_echantillon_ecrit_si_forme_inconnue (test_sources.TestRepliEspn.test_echantillon_ecrit_si_forme_inconnue)
+Si l'hôte répond mais qu'on ne sait pas le lire, il faut garder la ... ok
+test_etat_post_sans_champ_completed (test_sources.TestRepliEspn.test_etat_post_sans_champ_completed)
+Certaines variantes de l'API ESPN signalent la fin par ... ok
+test_fenetres_sans_chevauchement (test_sources.TestRepliEspn.test_fenetres_sans_chevauchement)
+112 jours en fenêtres de 5 jours = 23 requêtes, pas une de plus : ... ok
+test_home_away_pas_l_ordre_du_json (test_sources.TestRepliEspn.test_home_away_pas_l_ordre_du_json)
+ESPN ne range pas toujours le domicile en premier : on se fie au ... ok
+test_intersaison_sautee (test_sources.TestRepliEspn.test_intersaison_sautee)
+Juillet, août, septembre : aucun match NBA. Inutile de le demander. ... ok
+test_les_echecs_non_403_n_arretent_pas (test_sources.TestRepliEspn.test_les_echecs_non_403_n_arretent_pas)
+Un hôte lent ou en panne n'est pas un hôte qui nous bloque : là il ... ok
+test_lignes_incompletes_ecartees (test_sources.TestRepliEspn.test_lignes_incompletes_ecartees) ... ok
+test_match_a_venir_ecarte (test_sources.TestRepliEspn.test_match_a_venir_ecarte)
+Un match sans score final n'a rien à faire dans la base d'entraînement ... ok
+test_reassemble_domicile_et_exterieur (test_sources.TestRepliEspn.test_reassemble_domicile_et_exterieur) ... ok
+test_reponse_invalide_ne_casse_rien (test_sources.TestRepliEspn.test_reponse_invalide_ne_casse_rien) ... ok
+test_saison_calculee_depuis_la_date (test_sources.TestRepliEspn.test_saison_calculee_depuis_la_date)
+Une saison NBA commence en octobre : un match de janvier 2025 ... ok
+test_distribution_jeux_contre_simulation (test_tennis.TestChaineMarkov.test_distribution_jeux_contre_simulation) ... ok
+test_dp_contre_simulation (test_tennis.TestChaineMarkov.test_dp_contre_simulation) ... ok
+test_ecart_positif_pour_le_favori (test_tennis.TestChaineMarkov.test_ecart_positif_pour_le_favori) ... ok
+test_handicap_coherent_avec_ecart (test_tennis.TestChaineMarkov.test_handicap_coherent_avec_ecart) ... ok
+test_scores_en_sets_contre_simulation (test_tennis.TestChaineMarkov.test_scores_en_sets_contre_simulation) ... ok
+test_calibration_apparie_chaque_colonne_a_son_issue (test_tennis.TestCommun.test_calibration_apparie_chaque_colonne_a_son_issue)
+Régression : aplatir probas et issues séparément donne ~50 % partout. ... ok
+test_calibration_ecarte_les_petits_effectifs (test_tennis.TestCommun.test_calibration_ecarte_les_petits_effectifs) ... ok
+test_devig_cote_manquante (test_tennis.TestCommun.test_devig_cote_manquante) ... ok
+test_devig_retire_la_marge (test_tennis.TestCommun.test_devig_retire_la_marge) ... ok
+test_logloss_absurde (test_tennis.TestCommun.test_logloss_absurde) ... ok
+test_logloss_parfaite (test_tennis.TestCommun.test_logloss_parfaite) ... ok
+test_rps_ordre (test_tennis.TestCommun.test_rps_ordre)
+Rater de 2 crans doit coûter plus cher que rater d'un cran. ... ok
+test_egalite_symetrie (test_tennis.TestDistributionSet.test_egalite_symetrie)
+À 50/50 sur chaque point, A et B gagnent le set autant. ... ok
+test_scores_possibles (test_tennis.TestDistributionSet.test_scores_possibles) ... ok
+test_somme_a_un (test_tennis.TestDistributionSet.test_somme_a_un) ... ok
+test_davis_cup_ignoree (test_tennis.TestElo.test_davis_cup_ignoree) ... ok
+test_historique_avant_match (test_tennis.TestElo.test_historique_avant_match)
+Le premier match de deux inconnus doit partir du classement initial : ... ok
+test_somme_nulle (test_tennis.TestElo.test_somme_nulle)
+L'Elo est un jeu à somme nulle : la moyenne du plateau ne bouge pas. ... ok
+test_cinq_sets_amplifie_le_favori (test_tennis.TestPronostic.test_cinq_sets_amplifie_le_favori)
+L'effet Grand Chelem vient de l'échelle ajustée par format ... ok
+test_joueurs_identiques (test_tennis.TestPronostic.test_joueurs_identiques) ... ok
+test_over_under_somment_a_un (test_tennis.TestPronostic.test_over_under_somment_a_un) ... ok
+test_surface_modifie_les_marches_derives (test_tennis.TestPronostic.test_surface_modifie_les_marches_derives)
+La probabilité de match vient de la logistique calibrée : à écart Elo ... ok
+test_total_jeux_realiste (test_tennis.TestPronostic.test_total_jeux_realiste) ... ok
+
+----------------------------------------------------------------------
+Ran 80 tests in 18.395s
+
+OK
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+  basket — stats.nba.com
+    → repli sur le scoreboard ESPN
+    8 matchs NBA écrits (espn)
+  basket — stats.nba.com
+    → repli sur le scoreboard ESPN
+    8 matchs NBA écrits (espn)
+  basket — stats.nba.com
+    → repli sur le scoreboard ESPN
+    ! aucun match reçu : le fichier existant est conservé
+  basket — stats.nba.com
+    ! réponse trop courte (84 o), ignorée
+  basket — stats.nba.com
+    ! budget de 0 s atteint, 0 matchs récupérés
+    → repli sur le scoreboard ESPN
+    ! réponse trop courte (83 o), ignorée
+  basket — stats.nba.com
+    8 matchs NBA écrits (stats.nba.com)
+    → repli sur le scoreboard ESPN
+    ! 403 à répétition : cet hôte bloque le serveur, on arrête le repli
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    ! 0 match lu alors que l'hôte répond : échantillon écrit dans echantillon-espn.json
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    ! 0 match lu alors que l'hôte répond : échantillon écrit dans echantillon-espn.json
+    → repli sur le scoreboard ESPN
+PYTHON_EXIT=0
+   (intersaison : aucun événement tennis, hockey, basket — détails non testés, c'est attendu)
+OK — rendu sans exception : 18799 caractères HTML, 0 événements, 0 blocs de détail, 4 onglets dont 1 actif
+NODE_EXIT=0

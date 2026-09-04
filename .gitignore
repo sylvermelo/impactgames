@@ -1,0 +1,43 @@
+# ============================================================================
+#  Ce qui est publié — et ce qui ne l'est pas
+# ============================================================================
+#  Le CODE est publié. Les DONNÉES volumineuses non : elles sont re-téléchargées
+#  par le workflow puis conservées dans le cache de GitHub.
+# ============================================================================
+
+# ---- données volumineuses ou régénérables -------------------------------
+data/*.csv
+data/modeles.json
+data/calendrier.json
+data/config.json
+
+# ⚠️ data/backtest_tennis.json est VOLONTAIREMENT CONSERVÉ : il pèse ~14 Ko et
+#    fournit les chiffres de fiabilité affichés dans l'onglet « Fiabilité ».
+#    Sans lui, l'application afficherait « Aucun backtest enregistré ».
+
+# ---- journaux et temporaires --------------------------------------------
+data/maj.log
+*.log
+data/*.part
+*.part
+*.tmp
+
+# ---- Python / Node ------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+
+# ---- fichiers de travail personnels -------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+design/
+
+# Dossier préparé par le workflow pour GitHub Pages : artefact de
+# construction, jamais à versionner.
+site/
