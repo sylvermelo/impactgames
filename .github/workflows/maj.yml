@@ -82,8 +82,22 @@ jobs:
             node tests/test_app.js
             echo "NODE_EXIT=$?"
           } 2>&1 | tee data/tests.log
-          grep -q "^PYTHON_EXIT=0$" data/tests.log || { echo "TESTS PYTHON EN ÉCHEC"; exit 1; }
-          grep -q "^NODE_EXIT=0$"   data/tests.log || { echo "TEST DE RENDU EN ÉCHEC"; exit 1; }
+          # En cas d'échec, on commit le journal AVANT de sortir : l'étape de
+          # rapatriement ne s'exécute pas toujours, et sans ce fichier un échec
+          # en CI est impossible à diagnostiquer à distance.
+          if ! grep -q "^PYTHON_EXIT=0$" data/tests.log \
+             || ! grep -q "^NODE_EXIT=0$" data/tests.log; then
+            cp data/tests.log /tmp/tests.log
+            git config user.name  "impactgames-bot"
+            git config user.email "bot@users.noreply.github.com"
+            cp /tmp/tests.log data/tests.log
+            git add -f data/tests.log || true
+            git commit -m "Journal des tests en échec [skip ci]" || true
+            git push origin HEAD:refs/heads/${{ github.ref_name }} || \
+              echo "journal non poussé"
+            grep -q "^PYTHON_EXIT=0$" data/tests.log || { echo "TESTS PYTHON EN ÉCHEC"; exit 1; }
+            echo "TEST DE RENDU EN ÉCHEC"; exit 1
+          fi
         # Si un test casse, on NE PUBLIE PAS. Mieux vaut une application
         # datée d'une heure qu'une application fausse.
 
@@ -126,7 +140,12 @@ jobs:
         run: |
           git config user.name  "impactgames-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add -f data/rapport-execution.json data/tests.log 2>/dev/null || true
+          # fichier par fichier : `git add -f a b` échoue EN BLOC si `a` manque,
+          # ce qui faisait silently disparaître tests.log du commit
+          for f in data/rapport-execution.json data/tests.log; do
+            if [ -f "$f" ]; then git add -f "$f"; else echo "absent : $f"; fi
+          done
+          echo "--- index ---"; git status --short
           if ! git diff --cached --quiet; then
             git commit -m "Rapport d'exécution [skip ci]"
             # actions/checkout laisse un HEAD DÉTACHÉ : `git push origin HEAD`
