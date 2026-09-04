@@ -79,10 +79,10 @@ La probabilité de match vient de la logistique calibrée : à écart Elo ... ok
 test_total_jeux_realiste (test_tennis.TestPronostic.test_total_jeux_realiste) ... ok
 
 ----------------------------------------------------------------------
-Ran 59 tests in 25.402s
+Ran 59 tests in 25.772s
 
 OK
 PYTHON_EXIT=0
-   (intersaison : aucun événement tennis, hockey — détails non testés, c'est attendu)
-OK — rendu sans exception : 12169 caractères HTML, 0 événements, 0 blocs de détail, 3 onglets dont 1 actif
+   (intersaison : aucun événement tennis, hockey, basket — détails non testés, c'est attendu)
+OK — rendu sans exception : 16063 caractères HTML, 0 événements, 0 blocs de détail, 4 onglets dont 1 actif
 NODE_EXIT=0
