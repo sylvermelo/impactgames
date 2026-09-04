@@ -80,20 +80,32 @@ if (!ligne) { console.error("ÉCHEC : ligne `const DATA = ` introuvable"); proce
 const DATA = JSON.parse(ligne.slice("const DATA = ".length).replace(/;$/, "")
   .replace(/<\\\//g, "</"));
 
+// Nombre d'événements par sport. Indispensable : en intersaison (septembre pour
+// la NHL et la NBA), le MODÈLE existe mais il n'y a AUCUN match. Les blocs de
+// détail ne sont alors jamais rendus, et les exiger faisait échouer le test en
+// CI alors que l'application était parfaitement correcte.
+const parSport = {};
+(DATA.calendrier.evenements || []).forEach(e => { parSport[e.sport] = (parSport[e.sport] || 0) + 1; });
+const sansEvenement = [];
+
 if (DATA.modeles.tennis) {
   attend(/id="s-tennis"/, "onglet tennis absent");
   attend(/Elo par surface/, "description du moteur tennis absente");
   attend(/Classement du moteur/, "classement tennis absent");
+  if (parSport.tennis) attend(/Service A gagné/, "détail d'un match de tennis absent");
+  else sansEvenement.push("tennis");
 }
 if (DATA.modeles.hockey) {
   attend(/id="s-hockey"/, "onglet hockey absent");
   attend(/Force nette des équipes/, "classement hockey absent");
-  attend(/Prolongation \/ fusillade/, "détail prolongation hockey absent");
+  if (parSport.hockey) attend(/Prolongation \/ fusillade/, "détail prolongation hockey absent");
+  else sansEvenement.push("hockey");
 }
 if (DATA.modeles.basket) {
   attend(/id="s-basket"/, "onglet basket absent");
   attend(/Force nette et rythme/, "classement basket absent");
-  attend(/Écart le plus probable/, "détail basket absent");
+  if (parSport.basket) attend(/Écart le plus probable/, "détail basket absent");
+  else sansEvenement.push("basket");
 }
 attend(/id="s-fiabilite"/, "onglet fiabilité absent");
 attend(/walk-forward/i, "explication du backtest absente");
@@ -113,5 +125,8 @@ if (erreurs.length) {
   console.error("ÉCHEC :\n  - " + erreurs.join("\n  - "));
   process.exit(1);
 }
+if (sansEvenement.length)
+  console.log(`   (intersaison : aucun événement ${sansEvenement.join(", ")} — ` +
+              `détails non testés, c'est attendu)`);
 console.log(`OK — rendu sans exception : ${rendu.length} caractères HTML, ` +
             `${nEvs} événements, ${nDet} blocs de détail, ${boutons.length} onglets dont ${ongletActif.length} actif`);
