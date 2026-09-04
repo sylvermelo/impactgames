@@ -47,6 +47,33 @@ test_over_under_complementaires (test_hockey_basket.TestHockeyMarches.test_over_
 test_prolongation_realiste (test_hockey_basket.TestHockeyMarches.test_prolongation_realiste)
 Sur un match ÉQUILIBRÉ, 20 à 25 % des rencontres NHL vont au-delà ... ok
 test_trois_voies_somment_a_un (test_hockey_basket.TestHockeyMarches.test_trois_voies_somment_a_un) ... ok
+test_erreur_enregistree (test_sources.TestGetErreurs.test_erreur_enregistree) ... ok
+test_liste_bornee (test_sources.TestGetErreurs.test_liste_bornee)
+Des centaines d'appels ne doivent pas gonfler le rapport sans limite, ... ok
+test_bascule_sur_espn_et_ecrit_le_csv (test_sources.TestMajBasketRepli.test_bascule_sur_espn_et_ecrit_le_csv) ... ok
+test_echec_des_deux_sources_diagnostique (test_sources.TestMajBasketRepli.test_echec_des_deux_sources_diagnostique)
+Une source muette ne doit plus ressembler à une source vide : ... ok
+test_fichier_non_ecrit_est_signale (test_sources.TestMajBasketRepli.test_fichier_non_ecrit_est_signale)
+Un CSV trop court pour être honnête n'est pas écrit : le rapport doit ... ok
+test_le_repli_a_un_budget_meme_si_stats_nba_a_tout_mange (test_sources.TestMajBasketRepli.test_le_repli_a_un_budget_meme_si_stats_nba_a_tout_mange)
+Régression : le repli partageait le budget de stats.nba.com. Une ... ok
+test_stats_nba_com_garde_la_priorite (test_sources.TestMajBasketRepli.test_stats_nba_com_garde_la_priorite)
+Si stats.nba.com répond, on ne dépense pas 400 requêtes ESPN. ... ok
+test_du_plus_recent_vers_le_plus_ancien (test_sources.TestRepliEspn.test_du_plus_recent_vers_le_plus_ancien)
+Si le budget s'épuise, il faut avoir gardé les saisons utiles. ... ok
+test_fenetres_sans_chevauchement (test_sources.TestRepliEspn.test_fenetres_sans_chevauchement)
+112 jours en fenêtres de 5 jours = 23 requêtes, pas une de plus : ... ok
+test_home_away_pas_l_ordre_du_json (test_sources.TestRepliEspn.test_home_away_pas_l_ordre_du_json)
+ESPN ne range pas toujours le domicile en premier : on se fie au ... ok
+test_intersaison_sautee (test_sources.TestRepliEspn.test_intersaison_sautee)
+Juillet, août, septembre : aucun match NBA. Inutile de le demander. ... ok
+test_lignes_incompletes_ecartees (test_sources.TestRepliEspn.test_lignes_incompletes_ecartees) ... ok
+test_match_a_venir_ecarte (test_sources.TestRepliEspn.test_match_a_venir_ecarte)
+Un match sans score final n'a rien à faire dans la base d'entraînement ... ok
+test_reassemble_domicile_et_exterieur (test_sources.TestRepliEspn.test_reassemble_domicile_et_exterieur) ... ok
+test_reponse_invalide_ne_casse_rien (test_sources.TestRepliEspn.test_reponse_invalide_ne_casse_rien) ... ok
+test_saison_calculee_depuis_la_date (test_sources.TestRepliEspn.test_saison_calculee_depuis_la_date)
+Une saison NBA commence en octobre : un match de janvier 2025 ... ok
 test_distribution_jeux_contre_simulation (test_tennis.TestChaineMarkov.test_distribution_jeux_contre_simulation) ... ok
 test_dp_contre_simulation (test_tennis.TestChaineMarkov.test_dp_contre_simulation) ... ok
 test_ecart_positif_pour_le_favori (test_tennis.TestChaineMarkov.test_ecart_positif_pour_le_favori) ... ok
@@ -79,10 +106,39 @@ La probabilité de match vient de la logistique calibrée : à écart Elo ... ok
 test_total_jeux_realiste (test_tennis.TestPronostic.test_total_jeux_realiste) ... ok
 
 ----------------------------------------------------------------------
-Ran 59 tests in 25.772s
+Ran 75 tests in 21.954s
 
 OK
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+    ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+  basket — stats.nba.com
+    → repli sur le scoreboard ESPN
+    8 matchs NBA écrits (espn)
+  basket — stats.nba.com
+    → repli sur le scoreboard ESPN
+    ! aucun match reçu : le fichier existant est conservé
+  basket — stats.nba.com
+    ! réponse trop courte (84 o), ignorée
+  basket — stats.nba.com
+    ! budget de 0 s atteint, 0 matchs récupérés
+    → repli sur le scoreboard ESPN
+    ! réponse trop courte (83 o), ignorée
+  basket — stats.nba.com
+    8 matchs NBA écrits (stats.nba.com)
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
 PYTHON_EXIT=0
-   (intersaison : aucun événement tennis, hockey, basket — détails non testés, c'est attendu)
-OK — rendu sans exception : 16063 caractères HTML, 0 événements, 0 blocs de détail, 4 onglets dont 1 actif
+   (intersaison : aucun événement tennis, hockey — détails non testés, c'est attendu)
+OK — rendu sans exception : 12169 caractères HTML, 0 événements, 0 blocs de détail, 3 onglets dont 1 actif
 NODE_EXIT=0

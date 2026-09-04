@@ -1,5 +1,5 @@
 {
- "horodatage": "2026-09-04T19:16:35",
+ "horodatage": "2026-09-04T19:52:02",
  "sources": {
   "tennis": {
    "sport": "tennis",
@@ -13,7 +13,14 @@
   },
   "basket": {
    "sport": "basket",
-   "matchs": 7559
+   "matchs": 0,
+   "erreur": "aucun_match",
+   "diagnostic": [
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191012-201",
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191007-201",
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191002-201",
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191001-201"
+   ]
   }
  },
  "etapes": {
