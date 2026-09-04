@@ -71,8 +71,19 @@ jobs:
 
       - name: Contrôle qualité — la suite de tests doit passer
         run: |
-          python -m unittest discover -s tests -v
-          node tests/test_app.js
+          mkdir -p data
+          set -o pipefail
+          # La sortie est conservée dans data/tests.log : les journaux Actions
+          # ne sont pas téléchargeables de partout, et sans elle un échec en CI
+          # est impossible à diagnostiquer à distance.
+          {
+            python -m unittest discover -s tests -v
+            echo "PYTHON_EXIT=$?"
+            node tests/test_app.js
+            echo "NODE_EXIT=$?"
+          } 2>&1 | tee data/tests.log
+          grep -q "^PYTHON_EXIT=0$" data/tests.log || { echo "TESTS PYTHON EN ÉCHEC"; exit 1; }
+          grep -q "^NODE_EXIT=0$"   data/tests.log || { echo "TEST DE RENDU EN ÉCHEC"; exit 1; }
         # Si un test casse, on NE PUBLIE PAS. Mieux vaut une application
         # datée d'une heure qu'une application fausse.
 
@@ -115,10 +126,13 @@ jobs:
         run: |
           git config user.name  "impactgames-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add -f data/rapport-execution.json 2>/dev/null || true
+          git add -f data/rapport-execution.json data/tests.log 2>/dev/null || true
           if ! git diff --cached --quiet; then
-            git commit -m "Rapport d'exécution [skip ci]" && git push origin HEAD || \
-              echo "rapport non poussé (branche protégée ?)"
+            git commit -m "Rapport d'exécution [skip ci]"
+            # actions/checkout laisse un HEAD DÉTACHÉ : `git push origin HEAD`
+            # n'aboutit nulle part. Il faut viser la branche explicitement.
+            git push origin HEAD:refs/heads/${{ github.ref_name }} || \
+              echo "rapport non poussé (permissions ?)"
           else
             echo "rapport inchangé"
           fi
