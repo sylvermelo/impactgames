@@ -116,7 +116,7 @@ La probabilité de match vient de la logistique calibrée : à écart Elo ... ok
 test_total_jeux_realiste (test_tennis.TestPronostic.test_total_jeux_realiste) ... ok
 
 ----------------------------------------------------------------------
-Ran 80 tests in 26.453s
+Ran 80 tests in 18.395s
 
 OK
     ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
