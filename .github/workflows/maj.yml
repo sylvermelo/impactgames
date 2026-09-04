@@ -28,6 +28,11 @@ permissions:
   # avalée par le `|| echo`) et un échec de tests devenait indiagnosticable.
   contents: write
   pages: write
+  # La doc GitHub est explicite : créer un site Pages demande « Pages (write) »
+  # ET « Administration (write) ». Sans le second, POST /repos/.../pages renvoie
+  # 403 « Resource not accessible by integration » (constaté dans data/pages.log
+  # du run 33912833022).
+  administration: write
   id-token: write
 
 # une seule exécution à la fois : la plus ancienne s'arrête
@@ -125,6 +130,38 @@ jobs:
           cp README.md site/README.md 2>/dev/null || true
           cp CONCEPTION.md site/CONCEPTION.md 2>/dev/null || true
 
+      # Les sources NBA renvoient 403 depuis les serveurs de GitHub : on sonde
+      # plusieurs hôtes (avec un User-Agent de navigateur ET le nôtre) et on
+      # écrit les codes dans data/sonde.log, re-committé par « Rapatrier ».
+      - name: Sonder les sources de basket
+        continue-on-error: true
+        run: |
+          UA_NAV="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          UA_BOT="Mozilla/5.0 (compatible; impactgames/1.0)"
+          : > data/sonde.log
+          sonde() {
+            for ua in "$UA_NAV" "$UA_BOT"; do
+              tag=bot; [ "$ua" = "$UA_NAV" ] && tag=nav
+              code=$(curl -sS -o /dev/null -m 20 -w '%{http_code}' \
+                       -A "$ua" "$1" 2>/dev/null || echo ERR)
+              printf '%-5s %-4s %-22s %s\n' "$code" "$tag" "$2" "$1" >> data/sonde.log
+            done
+          }
+          sonde "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20250110&limit=5" "espn-site"
+          sonde "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20250110&limit=5" "espn-site-web"
+          sonde "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2025/types/2/teams/2/events?limit=2" "espn-core"
+          sonde "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2_1.json" "cdn-nba"
+          sonde "https://data.nba.net/10s/prod/v1/2024/scoreboard.json" "data-nba-net"
+          sonde "https://stats.nba.com/stats/leaguegamefinder?LeagueID=00&Season=2024-25&SeasonType=Regular%20Season&PlayerOrTeam=T" "stats-nba"
+          sonde "https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=4387" "tsdb-past"
+          sonde "https://www.thesportsdb.com/api/v1/json/123/eventsseason.php?id=4387&season=2024-2025" "tsdb-season"
+          sonde "https://api.balldontlie.io/v1/games?per_page=1" "balldontlie"
+          sonde "https://www.basketball-reference.com/leagues/NBA_2025_games.html" "basketball-ref"
+          sonde "https://api.nhle.com/stats/rest/en/game?limit=1" "temoin-nhle"
+          sonde "https://api-web.nhle.com/v1/schedule/2025-01-10" "temoin-nhle-web"
+          sonde "https://raw.githubusercontent.com/Kadantte/tennis_atp/master/README.md" "temoin-raw-github"
+          echo "----- data/sonde.log -----"; cat data/sonde.log
+
       - name: Configurer GitHub Pages
         id: pages
         # On ne s'arrête pas ici : si Pages refuse, on veut d'abord écrire POURQUOI
@@ -182,7 +219,7 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           # fichier par fichier : `git add -f a b` échoue EN BLOC si `a` manque,
           # ce qui faisait silently disparaître tests.log du commit
-          for f in data/rapport-execution.json data/tests.log data/pages.log; do
+          for f in data/rapport-execution.json data/tests.log data/pages.log data/sonde.log; do
             if [ -f "$f" ]; then git add -f "$f"; else echo "absent : $f"; fi
           done
           echo "--- index ---"; git status --short
