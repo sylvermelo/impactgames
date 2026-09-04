@@ -1,5 +1,5 @@
 {
- "horodatage": "2026-09-04T19:52:02",
+ "horodatage": "2026-09-04T20:10:19",
  "sources": {
   "tennis": {
    "sport": "tennis",
@@ -16,10 +16,10 @@
    "matchs": 0,
    "erreur": "aucun_match",
    "diagnostic": [
-    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191012-201",
-    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191007-201",
-    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191002-201",
-    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191001-201"
+    "TimeoutError sur https://stats.nba.com/stats/leaguegamefinder?LeagueID=00&Season=2020-21&SeasonType=Playoff : The read operation timed out",
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20260627-202",
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20260622-202",
+    "HTTP 403 sur https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20260617-202"
    ]
   }
  },
