@@ -108,6 +108,21 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      # Les journaux Actions ne sont pas téléchargeables de partout : on
+      # re-commit un petit rapport pour pouvoir lire ce qui s'est VRAIMENT passé.
+      - name: Rapatrier le rapport d'exécution
+        if: always()
+        run: |
+          git config user.name  "impactgames-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f data/rapport-execution.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Rapport d'exécution [skip ci]" && git push origin HEAD || \
+              echo "rapport non poussé (branche protégée ?)"
+          else
+            echo "rapport inchangé"
+          fi
+
       - name: Récapitulatif
         if: always()
         run: |

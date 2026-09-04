@@ -52,6 +52,14 @@ ANNEES_TENNIS = range(2013, dt.date.today().year + 1)
 SAISONS_HOCKEY = 6            # saisons NHL conservées
 SAISONS_BASKET = 6            # saisons NBA conservées
 
+# Budgets de temps PAR SOURCE. Sans eux, une API lente (stats.nba.com est
+# notoirement capricieuse) mange tout le budget du job et les autres sports
+# ne sont jamais traités.
+BUDGET_HOCKEY = 180
+BUDGET_BASKET = 240
+BUDGET_TENNIS = 300
+MAX_PAGES = 12                # 12 × 1000 matchs : très au-delà du besoin réel
+
 
 def _get(url: str, entetes=None, timeout=45) -> bytes | None:
     try:
@@ -85,7 +93,7 @@ def maj_tennis(dossier: Path = DATA) -> dict:
     print("  tennis — archive Sackmann (fork Kadantte)")
     dossier.mkdir(parents=True, exist_ok=True)
     url = "https://codeload.github.com/Kadantte/tennis_atp/tar.gz/refs/heads/master"
-    brut = _get(url, timeout=180)
+    brut = _get(url, timeout=BUDGET_TENNIS)
     if brut is None:
         # repli : fichier par fichier, pour les petites mises à jour
         return _maj_tennis_fichier_par_fichier(dossier)
@@ -159,9 +167,23 @@ def maj_hockey(dossier: Path = DATA, saisons: int = SAISONS_HOCKEY) -> dict:
     debut = aujourdhui.year - (1 if aujourdhui.month >= 9 else 2)
     premiere = f"{debut - saisons + 1}{debut - saisons + 2}"
 
-    cayenne = urllib.parse.quote(f"seasonId>={premiere} and gameTypeId=2")
+    # Les champs s'appellent `season` et `gameType` — PAS `seasonId` /
+    # `gameTypeId`, que l'API rejette (« Invalid path 'seasonId' for 'Game' »).
+    # Un filtre rejeté, c'est 75 698 matchs paginés au lieu de 4 000 : la
+    # première exécution a tenu 25 minutes là-dessus.
+    cayenne = urllib.parse.quote(f"season>={premiere} and gameType=2")
     lignes, depart, total = [], 0, None
+    t_debut = time.time()
     while True:
+        # garde-fous : ni la pagination ni une source lente ne doivent pouvoir
+        # consommer tout le budget du job (25 min dans le workflow)
+        if time.time() - t_debut > BUDGET_HOCKEY:
+            print(f"    ! budget de {BUDGET_HOCKEY} s atteint, "
+                  f"{depart} matchs récupérés")
+            break
+        if depart >= MAX_PAGES * 1000:
+            print(f"    ! plafond de {MAX_PAGES} pages atteint")
+            break
         url = ("https://api.nhle.com/stats/rest/en/game?"
                f"isGame=true&cayenneExp={cayenne}&limit=1000&start={depart}"
                "&sort=%5B%7B%22property%22%3A%22id%22%7D%5D")
@@ -227,7 +249,12 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
     depart = aujourdhui.year - (1 if aujourdhui.month >= 10 else 2)
 
     par_match: dict[str, dict] = {}
+    t_debut = time.time()
     for k in range(saisons):
+        if time.time() - t_debut > BUDGET_BASKET:
+            print(f"    ! budget de {BUDGET_BASKET} s atteint, "
+                  f"{len(par_match)} matchs récupérés")
+            break
         y = depart - k
         saison = f"{y}-{str(y + 1)[-2:]}"
         for type_ in ("Regular Season", "Playoffs"):
@@ -261,7 +288,7 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
                 else:
                     e.update({"date": date, "saison": saison, "domicile": adversaire.strip(),
                               "exterieur": moi.strip(), "pts_ext": pts})
-            time.sleep(0.4)               # stats.nba.com limite le débit
+            time.sleep(0.25)              # stats.nba.com limite le débit
 
     lignes = [v for v in par_match.values()
               if {"date", "domicile", "exterieur", "pts_dom", "pts_ext"} <= set(v)

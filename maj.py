@@ -33,6 +33,7 @@ RACINE = Path(__file__).resolve().parent
 DATA = RACINE / "data"
 LOG = DATA / "maj.log"
 APP = RACINE / "impactgames-autonome.html"
+RAPPORT = DATA / "rapport-execution.json"
 
 SPORTS = ("tennis", "hockey", "basket")
 
@@ -65,6 +66,25 @@ def lancer(script: str, duree: str, *args: str) -> bool:
         return False
     log(f"  {script} terminé en {time.time() - t0:.0f} s")
     return True
+
+
+def ecrire_rapport(donnees: dict, etapes: dict) -> None:
+    """Trace ce que chaque source a réellement renvoyé.
+
+    Indispensable en exécution distante : les journaux GitHub Actions ne sont
+    pas téléchargeables depuis tous les environnements, et sans ce fichier on
+    ne peut pas distinguer « la source n'a rien renvoyé » de « le script n'a
+    jamais tourné ». Le workflow le re-commit sur la branche.
+    """
+    import json
+    try:
+        DATA.mkdir(exist_ok=True)
+        RAPPORT.write_text(json.dumps(
+            {"horodatage": dt.datetime.now().isoformat(timespec="seconds"),
+             "sources": donnees, "etapes": etapes},
+            ensure_ascii=False, indent=1), encoding="utf-8")
+    except (OSError, TypeError) as e:
+        log(f"rapport d'exécution non écrit : {e}", "WARN")
 
 
 def verifier_app() -> bool:
@@ -106,6 +126,7 @@ def main() -> int:
     # 1. données -------------------------------------------------------------
     from sources import tout_mettre_a_jour
     res = tout_mettre_a_jour(tuple(cibles))
+    ecrire_rapport(res, {})
     for sport, r in res.items():
         if r.get("erreur"):
             log(f"  {sport} : {r['erreur']} — les données existantes sont conservées",
@@ -134,7 +155,9 @@ def main() -> int:
         log("génération de l'application échouée", "ERROR")
         return 1
 
-    return 0 if verifier_app() else 1
+    ok = verifier_app()
+    ecrire_rapport(res, {"entrainement": "ok", "application_publiable": ok})
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
