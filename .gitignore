@@ -1,0 +1,27 @@
+# Données volumineuses ou régénérables — le workflow les retélécharge
+data/*.csv
+data/*.json
+data/*.xlsx
+data/*.xls
+data/*.part
+data/atp/
+data/_sbr/
+data/maj.log
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.log
+*.tmp
+
+# Backtests lourds
+backtest_*.csv

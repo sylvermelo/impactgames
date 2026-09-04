@@ -1,0 +1,3 @@
+# Aucune bibliothèque obligatoire : le moteur tourne en Python standard.
+# openpyxl n'est utile que si tennis-data.co.uk ne publie que du .xlsx.
+# openpyxl
