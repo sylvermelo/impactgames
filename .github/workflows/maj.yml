@@ -22,7 +22,11 @@ on:
     branches: [ main, 'arena/01a06d4c-impactgames' ]
 
 permissions:
-  contents: read
+  # `contents: write` est indispensable : l'étape « Rapatrier le rapport »
+  # re-commit data/rapport-execution.json et data/tests.log sur la branche.
+  # Avec `contents: read`, `git push` échouait silencieusement (l'erreur était
+  # avalée par le `|| echo`) et un échec de tests devenait indiagnosticable.
+  contents: write
   pages: write
   id-token: write
 

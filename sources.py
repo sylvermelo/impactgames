@@ -92,7 +92,20 @@ def maj_tennis(dossier: Path = DATA) -> dict:
     """
     print("  tennis — archive Sackmann (fork Kadantte)")
     dossier.mkdir(parents=True, exist_ok=True)
+
+    # L'archive pèse ~55 Mo : on ne la reprend que si le dépôt a bougé.
+    # Une requête d'en-tête de quelques centaines d'octets remplace un
+    # téléchargement de 55 Mo — c'est ce qui faisait durer l'étape 3 minutes.
+    marqueur = dossier / ".version-tennis"
     url = "https://codeload.github.com/Kadantte/tennis_atp/tar.gz/refs/heads/master"
+    version = _version_depot()
+    deja_pret = (marqueur.exists() and version
+                 and marqueur.read_text(encoding="utf-8").strip() == version
+                 and any(dossier.glob("atp_matches_*.csv")))
+    if deja_pret:
+        n = len(list(dossier.glob("atp_matches_*.csv")))
+        print(f"    dépôt inchangé ({version[:10]}) : {n} saisons déjà présentes")
+        return {"sport": "tennis", "fichiers": n, "source": "github/inchange"}
     brut = _get(url, timeout=BUDGET_TENNIS)
     if brut is None:
         # repli : fichier par fichier, pour les petites mises à jour
@@ -114,8 +127,27 @@ def maj_tennis(dossier: Path = DATA) -> dict:
                 continue
             if _ecrire_atomic(dossier / nom, f.read()):
                 n += 1
+    if n and version:
+        marqueur.write_text(version, encoding="utf-8")
     print(f"    {n} saisons ATP écrites")
     return {"sport": "tennis", "fichiers": n, "source": "github"}
+
+
+def _version_depot() -> str | None:
+    """Empreinte du dernier commit du dépôt de données tennis.
+
+    Sert à décider s'il faut re-télécharger l'archive. Un échec renvoie None :
+    dans ce cas on re-télécharge, ce qui est le comportement sûr.
+    """
+    import json as _json
+    brut = _get("https://api.github.com/repos/Kadantte/tennis_atp/commits/master",
+                {**ENTETES, "Accept": "application/vnd.github+json"}, timeout=25)
+    if not brut:
+        return None
+    try:
+        return _json.loads(brut).get("sha")
+    except (ValueError, AttributeError):
+        return None
 
 
 def _maj_tennis_fichier_par_fichier(dossier: Path) -> dict:
