@@ -24,10 +24,19 @@ import sources
 from sports import basket as B
 
 
-def ev(id_, date, dom, pts_dom, ext, pts_ext, termine=True, periodes=4):
-    """Construit un « événement » au format du scoreboard ESPN."""
+def ev(id_, date, dom, pts_dom, ext, pts_ext, termine=True, periodes=4,
+       type_saison=2):
+    """Construit un « événement » au format du scoreboard ESPN.
+
+    `type_saison` suit la nomenclature ESPN : 1 = pré-saison, 2 = saison
+    régulière, 3 = playoffs. C'est ce champ qui permet d'écarter la Summer
+    League et les clubs invités.
+    """
     return {
         "id": id_, "date": date,
+        "season": {"year": int(date[:4]), "type": type_saison,
+                   "slug": {1: "pre-season", 2: "regular-season",
+                            3: "postseason"}.get(type_saison, "autre")},
         "competitions": [{
             "status": {"type": {"completed": termine,
                                 "state": "post" if termine else "pre"}},
@@ -196,6 +205,36 @@ class TestRepliEspn(unittest.TestCase):
                 self.assertIn("IND", fichier.read_text())
         finally:
             sources._get, sources.PAUSE_ESPN = avant
+
+    def test_presaison_et_evenements_speciaux_ecartes(self):
+        """Le scoreboard ESPN mélange saison régulière, pré-saison, Summer League
+        et Rising Stars. Sans filtre, la base comptait 56 « équipes » au lieu de
+        30 et le moteur notait des clubs invités comme des franchises."""
+        payload = {"events": [
+            ev("1", "2025-01-11T00:00Z", "IND", "108", "GS", "105",
+               type_saison=2),                          # saison régulière
+            ev("2", "2025-05-11T00:00Z", "BOS", "99", "NY", "94",
+               type_saison=3),                          # playoffs
+            ev("3", "2024-10-05T00:00Z", "BOS", "107", "HAPOEL", "81",
+               type_saison=1),                          # pré-saison, club invité
+            ev("4", "2025-02-15T00:00Z", "EAST", "141", "WEST", "133",
+               type_saison=4),                          # Rising Stars
+        ]}
+        bouchon, lignes = self.lance(dt.date(2024, 10, 1), dt.date(2025, 5, 20),
+                                     reponse=json.dumps(payload).encode())
+        gardees = {(l["domicile"], l["exterieur"]) for l in lignes}
+        self.assertEqual(gardees, {("IND", "GS"), ("BOS", "NY")})
+        self.assertNotIn("HAPOEL", str(gardees))
+        self.assertNotIn("EAST", str(gardees))
+
+    def test_evenement_sans_type_de_saison_garde(self):
+        """Si un jour ESPN ne renvoie plus le type, il vaut mieux un match de
+        trop qu'une base vide : on garde, et on le signale."""
+        sans_type = ev("1", "2025-01-11T00:00Z", "IND", "108", "GS", "105")
+        del sans_type["season"]
+        _, lignes = self.lance(dt.date(2025, 1, 1), dt.date(2025, 1, 20),
+                               reponse=json.dumps({"events": [sans_type]}).encode())
+        self.assertEqual(len(lignes), 1)
 
     def test_abandon_rapide_sur_403(self):
         """Depuis les serveurs de GitHub, stats.nba.com ET ESPN répondent 403

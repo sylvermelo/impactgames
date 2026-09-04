@@ -62,6 +62,13 @@ ENTETES_NBA = {**ENTETES,
 ESPN_BASKET = ("https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/"
                "scoreboard?dates={a}-{b}&limit=100")
 FENETRE_ESPN = 5              # 5 jours ≈ 75 matchs, sous la limite de 100
+# 2 = saison régulière, 3 = playoffs. Le scoreboard ESPN renvoie AUSSI la
+# pré-saison (1), la Summer League et le Rising Stars : sans ce filtre, la base
+# contenait 56 « équipes » au lieu des 30 franchises NBA — dont GUANGZHOU,
+# HAPOEL, REAL (clubs invités en pré-saison), EAST/WEST (Rising Stars) ou
+# STRIPES, et le moteur leur attribuait des forces absurdes (rythme -46,5).
+# C'est l'équivalent du SeasonType=Regular Season/Playoffs de stats.nba.com.
+TYPES_SAISON_BASKET = (2, 3)
 PAUSE_ESPN = 0.12             # politesse entre deux requêtes
 
 ANNEES_TENNIS = range(2013, dt.date.today().year + 1)
@@ -339,6 +346,8 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float,
     par_match: dict[str, dict] = {}
     echantillon: bytes | None = None   # première réponse brute, pour diagnostic
     refus = 0                       # 403 consécutifs : l'hôte bloque ce serveur
+    hors_saison = 0                 # pré-saison, Summer League, Rising Stars
+    sans_type = 0                   # événements sans saison.type lisible
     b = jusqu_a
     while b >= depart and time.time() < budget:
         a = max(b - dt.timedelta(days=FENETRE_ESPN - 1), depart)
@@ -365,6 +374,12 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float,
             except (json.JSONDecodeError, AttributeError):
                 evs = []
             for ev in evs:
+                type_saison = (ev.get("season") or {}).get("type")
+                if type_saison is None:
+                    sans_type += 1        # on garde : mieux vaut un match de
+                elif type_saison not in TYPES_SAISON_BASKET:
+                    hors_saison += 1      # trop qu'une base vide
+                    continue
                 comps = ev.get("competitions") or []
                 if not comps:
                     continue
@@ -404,6 +419,12 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float,
         time.sleep(PAUSE_ESPN)
     if time.time() >= budget:
         print(f"    ! budget atteint, {len(par_match)} matchs récupérés")
+    if hors_saison:
+        print(f"    {hors_saison} événements hors saison régulière/playoffs écartés")
+    if sans_type:
+        # Si un jour ce nombre explose, c'est que la forme des données a changé
+        # et que le filtre ne protège plus rien : il faut le savoir.
+        print(f"    ! {sans_type} événements sans saison.type lisible (non filtrés)")
     if not par_match and echantillon:
         # L'hôte répond mais on ne comprend pas ce qu'il renvoie : on garde un
         # échantillon brut pour pouvoir lire la vraie forme des données, au lieu
