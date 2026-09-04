@@ -63,6 +63,10 @@ test_abandon_rapide_sur_403 (test_sources.TestRepliEspn.test_abandon_rapide_sur_
 Depuis les serveurs de GitHub, stats.nba.com ET ESPN répondent 403 ... ok
 test_du_plus_recent_vers_le_plus_ancien (test_sources.TestRepliEspn.test_du_plus_recent_vers_le_plus_ancien)
 Si le budget s'épuise, il faut avoir gardé les saisons utiles. ... ok
+test_echantillon_ecrit_si_forme_inconnue (test_sources.TestRepliEspn.test_echantillon_ecrit_si_forme_inconnue)
+Si l'hôte répond mais qu'on ne sait pas le lire, il faut garder la ... ok
+test_etat_post_sans_champ_completed (test_sources.TestRepliEspn.test_etat_post_sans_champ_completed)
+Certaines variantes de l'API ESPN signalent la fin par ... ok
 test_fenetres_sans_chevauchement (test_sources.TestRepliEspn.test_fenetres_sans_chevauchement)
 112 jours en fenêtres de 5 jours = 23 requêtes, pas une de plus : ... ok
 test_home_away_pas_l_ordre_du_json (test_sources.TestRepliEspn.test_home_away_pas_l_ordre_du_json)
@@ -110,7 +114,7 @@ La probabilité de match vient de la logistique calibrée : à écart Elo ... ok
 test_total_jeux_realiste (test_tennis.TestPronostic.test_total_jeux_realiste) ... ok
 
 ----------------------------------------------------------------------
-Ran 77 tests in 27.699s
+Ran 79 tests in 26.620s
 
 OK
     ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
@@ -138,14 +142,18 @@ OK
     ! 403 à répétition : cet hôte bloque le serveur, on arrête le repli
     → repli sur le scoreboard ESPN
     → repli sur le scoreboard ESPN
+    ! 0 match lu alors que l'hôte répond : échantillon écrit dans echantillon-espn.json
     → repli sur le scoreboard ESPN
     → repli sur le scoreboard ESPN
     → repli sur le scoreboard ESPN
     → repli sur le scoreboard ESPN
     → repli sur le scoreboard ESPN
     → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    → repli sur le scoreboard ESPN
+    ! 0 match lu alors que l'hôte répond : échantillon écrit dans echantillon-espn.json
     → repli sur le scoreboard ESPN
 PYTHON_EXIT=0
-   (intersaison : aucun événement tennis, hockey — détails non testés, c'est attendu)
-OK — rendu sans exception : 12169 caractères HTML, 0 événements, 0 blocs de détail, 3 onglets dont 1 actif
+   (intersaison : aucun événement tennis, hockey, basket — détails non testés, c'est attendu)
+OK — rendu sans exception : 18383 caractères HTML, 0 événements, 0 blocs de détail, 4 onglets dont 1 actif
 NODE_EXIT=0
