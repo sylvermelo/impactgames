@@ -51,6 +51,8 @@ test_erreur_enregistree (test_sources.TestGetErreurs.test_erreur_enregistree) ..
 test_liste_bornee (test_sources.TestGetErreurs.test_liste_bornee)
 Des centaines d'appels ne doivent pas gonfler le rapport sans limite, ... ok
 test_bascule_sur_espn_et_ecrit_le_csv (test_sources.TestMajBasketRepli.test_bascule_sur_espn_et_ecrit_le_csv) ... ok
+test_echantillon_perime_supprime (test_sources.TestMajBasketRepli.test_echantillon_perime_supprime)
+Une fois les matchs lus, l'échantillon de diagnostic d'une exécution ... ok
 test_echec_des_deux_sources_diagnostique (test_sources.TestMajBasketRepli.test_echec_des_deux_sources_diagnostique)
 Une source muette ne doit plus ressembler à une source vide : ... ok
 test_fichier_non_ecrit_est_signale (test_sources.TestMajBasketRepli.test_fichier_non_ecrit_est_signale)
@@ -114,7 +116,7 @@ La probabilité de match vient de la logistique calibrée : à écart Elo ... ok
 test_total_jeux_realiste (test_tennis.TestPronostic.test_total_jeux_realiste) ... ok
 
 ----------------------------------------------------------------------
-Ran 79 tests in 26.620s
+Ran 80 tests in 26.453s
 
 OK
     ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
@@ -124,6 +126,9 @@ OK
     ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
     ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
     ! URLError sur https://127.0.0.1:9/inexistant : <urlopen error [Errno 111] Connection refused>
+  basket — stats.nba.com
+    → repli sur le scoreboard ESPN
+    8 matchs NBA écrits (espn)
   basket — stats.nba.com
     → repli sur le scoreboard ESPN
     8 matchs NBA écrits (espn)
@@ -155,5 +160,5 @@ OK
     → repli sur le scoreboard ESPN
 PYTHON_EXIT=0
    (intersaison : aucun événement tennis, hockey, basket — détails non testés, c'est attendu)
-OK — rendu sans exception : 18383 caractères HTML, 0 événements, 0 blocs de détail, 4 onglets dont 1 actif
+OK — rendu sans exception : 18799 caractères HTML, 0 événements, 0 blocs de détail, 4 onglets dont 1 actif
 NODE_EXIT=0
