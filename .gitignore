@@ -37,3 +37,7 @@ node_modules/
 Thumbs.db
 *.swp
 design/
+
+# Dossier préparé par le workflow pour GitHub Pages : artefact de
+# construction, jamais à versionner.
+site/
