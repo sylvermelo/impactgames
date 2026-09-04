@@ -492,6 +492,12 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
         w.writerow([v["date"], v["saison"], v["domicile"], v["exterieur"],
                     v["pts_dom"], v["pts_ext"]])
     source = "espn" if repli else "stats.nba.com"
+    # Un échantillon de diagnostic d'une exécution précédente n'a plus de raison
+    # d'être là maintenant qu'on lit les matchs : le laisser traîner ferait
+    # croire à un problème résolu.
+    vieil_echantillon = dossier / "echantillon-espn.json"
+    if vieil_echantillon.exists():
+        vieil_echantillon.unlink()
     if not _ecrire_atomic(dossier / "nba_matchs.csv",
                           tampon.getvalue().encode("utf-8")):
         # Le fichier existant est conservé : il ne faut surtout pas annoncer

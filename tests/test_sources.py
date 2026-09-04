@@ -74,13 +74,23 @@ class Bouchon:
 class TestRepliEspn(unittest.TestCase):
     """Le scoreboard ESPN est la source de secours du basket."""
 
-    def lance(self, depart, jusqu_a, budget_s=30):
-        bouchon = Bouchon([("site.web.api.espn.com", json.dumps(PAYLOAD).encode())])
+    def lance(self, depart, jusqu_a, budget_s=30, reponse=None):
+        """Appelle le repli ESPN sur un DOSSIER TEMPORAIRE.
+
+        Le défaut de `_maj_basket_espn` est le vrai dossier `data/` du projet :
+        un test qui l'oublie y écrit pour de bon (c'est arrivé — un
+        echantillon-espn.json de test s'est retrouvé committé par la CI).
+        """
+        bouchon = Bouchon([("site.web.api.espn.com",
+                            reponse or json.dumps(PAYLOAD).encode())])
         original, pause = sources._get, sources.PAUSE_ESPN
         sources._get, sources.PAUSE_ESPN = bouchon, 0.0
+        self.dossier = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dossier.cleanup)
         try:
             r = sources._maj_basket_espn(depart, jusqu_a,
-                                         time.time() + budget_s)
+                                         time.time() + budget_s,
+                                         Path(self.dossier.name))
         finally:
             sources._get, sources.PAUSE_ESPN = original, pause
         return bouchon, sources._lignes_basket(r)
@@ -133,16 +143,9 @@ class TestRepliEspn(unittest.TestCase):
         self.assertTrue(mois <= {"06", "10"}, mois)
 
     def test_reponse_invalide_ne_casse_rien(self):
-        bouchon = Bouchon([("site.web.api.espn.com", b"<html>pas du json</html>")])
-        original = sources._get
-        sources._get = bouchon
-        try:
-            r = sources._maj_basket_espn(dt.date(2025, 1, 1),
-                                         dt.date(2025, 1, 10),
-                                         time.time() + 5)
-        finally:
-            sources._get = original
-        self.assertEqual(r, {})
+        _, lignes = self.lance(dt.date(2025, 1, 1), dt.date(2025, 1, 10), 5,
+                               reponse=b"<html>pas du json</html>")
+        self.assertEqual(lignes, [])
 
     def test_etat_post_sans_champ_completed(self):
         """Certaines variantes de l'API ESPN signalent la fin par
@@ -159,12 +162,14 @@ class TestRepliEspn(unittest.TestCase):
         bouchon = Bouchon([("site.web.api.espn.com", json.dumps(payload).encode())])
         avant = (sources._get, sources.PAUSE_ESPN)
         sources._get, sources.PAUSE_ESPN = bouchon, 0.0
-        try:
-            lignes = sources._lignes_basket(
-                sources._maj_basket_espn(dt.date(2025, 1, 1), dt.date(2025, 1, 20),
-                                         time.time() + 10))
-        finally:
-            sources._get, sources.PAUSE_ESPN = avant
+        with tempfile.TemporaryDirectory() as d:
+            try:
+                lignes = sources._lignes_basket(
+                    sources._maj_basket_espn(dt.date(2025, 1, 1),
+                                             dt.date(2025, 1, 20),
+                                             time.time() + 10, Path(d)))
+            finally:
+                sources._get, sources.PAUSE_ESPN = avant
         self.assertEqual(len(lignes), 1)
         self.assertEqual((lignes[0]["domicile"], lignes[0]["pts_dom"]), ("IND", 108))
 
@@ -208,10 +213,12 @@ class TestRepliEspn(unittest.TestCase):
         bouchon = Refus()
         avant = (sources._get, sources.PAUSE_ESPN, sources.DERNIER_CODE)
         sources._get, sources.PAUSE_ESPN = bouchon, 0.0
-        try:
+        with tempfile.TemporaryDirectory() as d:
+          try:
             r = sources._maj_basket_espn(dt.date(2024, 10, 1),
-                                         dt.date(2025, 1, 20), time.time() + 30)
-        finally:
+                                         dt.date(2025, 1, 20), time.time() + 30,
+                                         Path(d))
+          finally:
             (sources._get, sources.PAUSE_ESPN,
              sources.DERNIER_CODE) = avant
         self.assertEqual(r, {})
@@ -232,10 +239,12 @@ class TestRepliEspn(unittest.TestCase):
         bouchon = Panne()
         avant = (sources._get, sources.PAUSE_ESPN, sources.DERNIER_CODE)
         sources._get, sources.PAUSE_ESPN = bouchon, 0.0
-        try:
+        with tempfile.TemporaryDirectory() as d:
+          try:
             sources._maj_basket_espn(dt.date(2024, 10, 1),
-                                     dt.date(2025, 1, 20), time.time() + 30)
-        finally:
+                                     dt.date(2025, 1, 20), time.time() + 30,
+                                     Path(d))
+          finally:
             (sources._get, sources.PAUSE_ESPN,
              sources.DERNIER_CODE) = avant
         self.assertEqual(len(bouchon.urls), 23, "toutes les fenêtres doivent être tentées")
@@ -342,6 +351,25 @@ class TestMajBasketRepli(unittest.TestCase):
             r = sources.maj_basket(Path(d))
             self.assertTrue(bouchon.dates, "ESPN n'a même pas été interrogé")
             self.assertEqual(r["source"], "espn")
+
+    def test_echantillon_perime_supprime(self):
+        """Une fois les matchs lus, l'échantillon de diagnostic d'une exécution
+        précédente doit disparaître : le laisser ferait croire à un problème
+        qui n'existe plus."""
+        payload = json.dumps({"events": [
+            ev(str(i), f"2025-01-{10 + i:02d}T00:00Z", dom, "110", ext, "100")
+            for i, (dom, ext) in enumerate(
+                [("BOS", "LAL"), ("MIA", "CHI"), ("DEN", "PHX"), ("GS", "DAL"),
+                 ("MIL", "NY"), ("PHI", "CLE"), ("MEM", "UTA"), ("SAC", "POR")])]
+        }).encode()
+        sources._get = Bouchon([("stats.nba.com", None),
+                                ("site.web.api.espn.com", payload)])
+        sources.BUDGET_BASKET = 2
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "echantillon-espn.json").write_text("vieux")
+            r = sources.maj_basket(Path(d))
+            self.assertNotIn("erreur", r)
+            self.assertFalse((Path(d) / "echantillon-espn.json").exists())
 
     def test_fichier_non_ecrit_est_signale(self):
         """Un CSV trop court pour être honnête n'est pas écrit : le rapport doit
