@@ -127,6 +127,10 @@ jobs:
 
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          # Pages n'est pas encore activé sur ce dépôt : on l'active nous-mêmes
+          # au lieu de faire échouer le déploiement (droit pages: write).
+          enablement: true
 
       - name: Envoyer le site
         uses: actions/upload-pages-artifact@v5

@@ -32,6 +32,7 @@ import json
 import shutil
 import tarfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -61,13 +62,26 @@ BUDGET_TENNIS = 300
 MAX_PAGES = 12                # 12 × 1000 matchs : très au-delà du besoin réel
 
 
+# Dernière erreur par URL. `stats.nba.com` échoue sans dire pourquoi dans les
+# journaux (et ces journaux ne sont pas téléchargeables de partout) : on remonte
+# donc le code HTTP exact dans le rapport d'exécution.
+DERNIERES_ERREURS: list[str] = []
+
+
 def _get(url: str, entetes=None, timeout=45) -> bytes | None:
     try:
         req = urllib.request.Request(url, headers=entetes or ENTETES)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.read()
+    except urllib.error.HTTPError as e:
+        msg = f"HTTP {e.code} sur {url[:90]}"
+        print(f"    ! {msg}")
+        DERNIERES_ERREURS.append(msg)
+        return None
     except Exception as e:
-        print(f"    ! {url[:70]}… : {type(e).__name__} {e}")
+        msg = f"{type(e).__name__} sur {url[:90]} : {str(e)[:80]}"
+        print(f"    ! {msg}")
+        DERNIERES_ERREURS.append(msg)
         return None
 
 
@@ -191,7 +205,8 @@ def maj_hockey(dossier: Path = DATA, saisons: int = SAISONS_HOCKEY) -> dict:
     equipes = _equipes_nhl()
     if not equipes:
         print("    ! liste des équipes injoignable : rien n'est modifié")
-        return {"sport": "hockey", "matchs": 0, "erreur": "equipes_injoignables"}
+        return {"sport": "hockey", "matchs": 0, "erreur": "equipes_injoignables",
+                "diagnostic": list(DERNIERES_ERREURS[-4:])}
 
     aujourdhui = dt.date.today()
     # la saison NHL 2025-26 s'écrit 20252026 ; en septembre la nouvelle n'a pas
@@ -238,7 +253,8 @@ def maj_hockey(dossier: Path = DATA, saisons: int = SAISONS_HOCKEY) -> dict:
 
     if not lignes:
         print("    ! aucun match reçu : le fichier existant est conservé")
-        return {"sport": "hockey", "matchs": 0, "erreur": "aucun_match"}
+        return {"sport": "hockey", "matchs": 0, "erreur": "aucun_match",
+                "diagnostic": list(DERNIERES_ERREURS[-4:])}
 
     ecris = 0
     tampon = io.StringIO()
@@ -328,7 +344,8 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
     lignes.sort(key=lambda v: v["date"])
     if not lignes:
         print("    ! aucun match reçu : le fichier existant est conservé")
-        return {"sport": "basket", "matchs": 0, "erreur": "aucun_match"}
+        return {"sport": "basket", "matchs": 0, "erreur": "aucun_match",
+                "diagnostic": list(DERNIERES_ERREURS[-4:])}
 
     tampon = io.StringIO()
     w = csv.writer(tampon)
