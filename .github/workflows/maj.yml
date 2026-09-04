@@ -223,7 +223,7 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           # fichier par fichier : `git add -f a b` échoue EN BLOC si `a` manque,
           # ce qui faisait silently disparaître tests.log du commit
-          for f in data/rapport-execution.json data/tests.log data/pages.log data/sonde.log; do
+          for f in data/rapport-execution.json data/tests.log data/pages.log data/sonde.log data/echantillon-espn.json; do
             if [ -f "$f" ]; then git add -f "$f"; else echo "absent : $f"; fi
           done
           echo "--- index ---"; git status --short

@@ -75,7 +75,7 @@ class TestRepliEspn(unittest.TestCase):
     """Le scoreboard ESPN est la source de secours du basket."""
 
     def lance(self, depart, jusqu_a, budget_s=30):
-        bouchon = Bouchon([("site.api.espn.com", json.dumps(PAYLOAD).encode())])
+        bouchon = Bouchon([("site.web.api.espn.com", json.dumps(PAYLOAD).encode())])
         original, pause = sources._get, sources.PAUSE_ESPN
         sources._get, sources.PAUSE_ESPN = bouchon, 0.0
         try:
@@ -133,7 +133,7 @@ class TestRepliEspn(unittest.TestCase):
         self.assertTrue(mois <= {"06", "10"}, mois)
 
     def test_reponse_invalide_ne_casse_rien(self):
-        bouchon = Bouchon([("site.api.espn.com", b"<html>pas du json</html>")])
+        bouchon = Bouchon([("site.web.api.espn.com", b"<html>pas du json</html>")])
         original = sources._get
         sources._get = bouchon
         try:
@@ -143,6 +143,54 @@ class TestRepliEspn(unittest.TestCase):
         finally:
             sources._get = original
         self.assertEqual(r, {})
+
+    def test_etat_post_sans_champ_completed(self):
+        """Certaines variantes de l'API ESPN signalent la fin par
+        « state: post » sans champ « completed ». Les deux doivent marcher."""
+        payload = {"events": [{
+            "id": "9", "date": "2025-01-11T00:00Z",
+            "competitions": [{
+                "status": {"type": {"state": "post", "shortDetail": "Final"}},
+                "competitors": [
+                    {"homeAway": "home", "score": "108",
+                     "team": {"abbreviation": "IND"}},
+                    {"homeAway": "away", "score": "105",
+                     "team": {"abbreviation": "GS"}}]}]}]}
+        bouchon = Bouchon([("site.web.api.espn.com", json.dumps(payload).encode())])
+        avant = (sources._get, sources.PAUSE_ESPN)
+        sources._get, sources.PAUSE_ESPN = bouchon, 0.0
+        try:
+            lignes = sources._lignes_basket(
+                sources._maj_basket_espn(dt.date(2025, 1, 1), dt.date(2025, 1, 20),
+                                         time.time() + 10))
+        finally:
+            sources._get, sources.PAUSE_ESPN = avant
+        self.assertEqual(len(lignes), 1)
+        self.assertEqual((lignes[0]["domicile"], lignes[0]["pts_dom"]), ("IND", 108))
+
+    def test_echantillon_ecrit_si_forme_inconnue(self):
+        """Si l'hôte répond mais qu'on ne sait pas le lire, il faut garder la
+        réponse brute : sans elle, on devine la forme des données à l'aveugle."""
+        inconnu = {"events": [{"id": "1", "date": "2025-01-11T00:00Z",
+                               "competitions": [{"competitors": [
+                                   {"homeAway": "home", "score": "108",
+                                    "team": {"abbreviation": "IND"}},
+                                   {"homeAway": "away", "score": "105",
+                                    "team": {"abbreviation": "GS"}}]}]}]}
+        bouchon = Bouchon([("site.web.api.espn.com", json.dumps(inconnu).encode())])
+        avant = (sources._get, sources.PAUSE_ESPN)
+        sources._get, sources.PAUSE_ESPN = bouchon, 0.0
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                r = sources._maj_basket_espn(dt.date(2025, 1, 1),
+                                             dt.date(2025, 1, 20),
+                                             time.time() + 10, Path(d))
+                self.assertEqual(r, {})
+                fichier = Path(d) / "echantillon-espn.json"
+                self.assertTrue(fichier.exists())
+                self.assertIn("IND", fichier.read_text())
+        finally:
+            sources._get, sources.PAUSE_ESPN = avant
 
     def test_abandon_rapide_sur_403(self):
         """Depuis les serveurs de GitHub, stats.nba.com ET ESPN répondent 403
@@ -213,6 +261,8 @@ class TestMajBasketRepli(unittest.TestCase):
         self.avant = (sources._get, sources.PAUSE_ESPN, sources.BUDGET_BASKET,
                       list(sources.DERNIERES_ERREURS))
         sources.PAUSE_ESPN = 0.0
+        sources.DERNIERES_ERREURS.clear()   # sinon le diagnostic d'un test
+        sources.DERNIER_CODE = None         # traîne les erreurs d'un autre
 
     def tearDown(self):
         (sources._get, sources.PAUSE_ESPN, sources.BUDGET_BASKET, _) = self.avant
@@ -228,7 +278,7 @@ class TestMajBasketRepli(unittest.TestCase):
         payload = json.dumps({"events": matchs}).encode()
         # stats.nba.com muet (c'est ce qui arrive dans le job GitHub), ESPN ok
         sources._get = Bouchon([("stats.nba.com", None),
-                                ("site.api.espn.com", payload)])
+                                ("site.web.api.espn.com", payload)])
         sources.BUDGET_BASKET = 2          # le test ne doit pas durer 4 minutes
         with tempfile.TemporaryDirectory() as d:
             r = sources.maj_basket(Path(d))
@@ -285,7 +335,7 @@ class TestMajBasketRepli(unittest.TestCase):
         payload = json.dumps({"events": [
             ev("1", "2025-01-11T00:00Z", "IND", "108", "GS", "105")]}).encode()
         bouchon = Bouchon([("stats.nba.com", None),
-                           ("site.api.espn.com", payload)])
+                           ("site.web.api.espn.com", payload)])
         sources._get = bouchon
         sources.BUDGET_BASKET = 0            # stats.nba.com a tout consommé
         with tempfile.TemporaryDirectory() as d:

@@ -144,6 +144,6 @@ Toutes gratuites, toutes sans clé API :
 |---|---|---|
 | Tennis | dépôt GitHub `Kadantte/tennis_atp`, fork de la base de Jeff Sackmann (l'original a disparu de GitHub en 2026) | ESPN |
 | Hockey | `api.nhle.com/stats/rest/en/game` — API officielle, filtrée sur les saisons régulières récentes | `api-web.nhle.com/v1/schedule` |
-| Basket | `stats.nba.com/stats/leaguegamefinder`, et en repli le scoreboard ESPN (`site.api.espn.com`) | ESPN |
+| Basket | scoreboard ESPN sur `site.web.api.espn.com` (l'hôte `site.api.espn.com` et `stats.nba.com` renvoient 403 depuis les serveurs de GitHub — mesuré par le workflow, voir `data/sonde.log`) | ESPN |
 
 Merci à Jeff Sackmann pour trente ans de données de tennis patiemment rassemblées.

@@ -53,7 +53,13 @@ ENTETES_NBA = {**ENTETES,
 # il accepte une plage de dates (dates=20250217-20250218 renvoie bien
 # « events: [] », les deux jours tombant pendant la pause du All-Star Game) et
 # ne demande ni clé ni en-tête particulier.
-ESPN_BASKET = ("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/"
+#
+# L'HÔTE COMPTE : depuis les serveurs de GitHub, site.api.espn.com répond 403
+# (protection anti-robot) alors que site.web.api.espn.com répond 200 pour le
+# même chemin. Mesuré par l'étape « Sonder les sources de basket » du workflow,
+# résultat dans data/sonde.log du run 33914446553. Le User-Agent n'y change
+# rien : le blocage porte sur l'adresse, pas sur l'en-tête.
+ESPN_BASKET = ("https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/"
                "scoreboard?dates={a}-{b}&limit=100")
 FENETRE_ESPN = 5              # 5 jours ≈ 75 matchs, sous la limite de 100
 PAUSE_ESPN = 0.12             # politesse entre deux requêtes
@@ -319,7 +325,8 @@ def _lignes_basket(par_match: dict) -> list[dict]:
     return lignes
 
 
-def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
+def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float,
+                     dossier: Path = DATA) -> dict:
     """Repli : lit le scoreboard ESPN, fenêtre de quelques jours par fenêtre.
 
     `stats.nba.com` renvoie 0 match dans le job GitHub (il bloque les requêtes
@@ -330,6 +337,7 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
     """
     print("    → repli sur le scoreboard ESPN")
     par_match: dict[str, dict] = {}
+    echantillon: bytes | None = None   # première réponse brute, pour diagnostic
     refus = 0                       # 403 consécutifs : l'hôte bloque ce serveur
     b = jusqu_a
     while b >= depart and time.time() < budget:
@@ -350,6 +358,8 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
                 break
         if brut:
             refus = 0
+            if echantillon is None:
+                echantillon = brut
             try:
                 evs = json.loads(brut).get("events", [])
             except (json.JSONDecodeError, AttributeError):
@@ -359,7 +369,13 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
                 if not comps:
                     continue
                 c0 = comps[0]
-                if not ((c0.get("status") or {}).get("type") or {}).get("completed"):
+                etat = ((c0.get("status") or {}).get("type") or {})
+                # « completed » est le champ habituel, « state: post » son
+                # équivalent sur certaines variantes de l'API ESPN. Sans l'un
+                # des deux on n'ose pas : un match en cours a déjà des scores
+                # entiers, et l'avaler reviendrait à entraîner sur l'avenir.
+                if not (etat.get("completed") is True
+                        or etat.get("state") == "post"):
                     continue                    # match à venir ou en cours
                 dom = ext = None
                 for c in c0.get("competitors", []):
@@ -388,6 +404,15 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
         time.sleep(PAUSE_ESPN)
     if time.time() >= budget:
         print(f"    ! budget atteint, {len(par_match)} matchs récupérés")
+    if not par_match and echantillon:
+        # L'hôte répond mais on ne comprend pas ce qu'il renvoie : on garde un
+        # échantillon brut pour pouvoir lire la vraie forme des données, au lieu
+        # de deviner pendant des heures.
+        cible = dossier / "echantillon-espn.json"
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        cible.write_bytes(echantillon[:6000])
+        print(f"    ! 0 match lu alors que l'hôte répond : "
+              f"échantillon écrit dans {cible.name}")
     return par_match
 
 
@@ -452,7 +477,7 @@ def maj_basket(dossier: Path = DATA, saisons: int = SAISONS_BASKET) -> dict:
         # stats.nba.com n'a rien donné : on tente ESPN avant d'abandonner.
         par_match = _maj_basket_espn(
             dt.date(depart - saisons + 1, 10, 1), aujourdhui,
-            t_debut + BUDGET_BASKET + BUDGET_REPLI_BASKET)
+            t_debut + BUDGET_BASKET + BUDGET_REPLI_BASKET, dossier)
         lignes = _lignes_basket(par_match)
         repli = True
     if not lignes:
