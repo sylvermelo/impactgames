@@ -19,7 +19,7 @@ on:
     - cron: '30 */3 * * *'
   workflow_dispatch:            # bouton « Run workflow »
   push:
-    branches: [ main ]
+    branches: [ main, 'arena/01a06d4c-impactgames' ]
 
 permissions:
   contents: read
