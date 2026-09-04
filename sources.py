@@ -79,8 +79,15 @@ MAX_PAGES = 12                # 12 × 1000 matchs : très au-delà du besoin ré
 # donc le code HTTP exact dans le rapport d'exécution.
 DERNIERES_ERREURS: list[str] = []
 
+# Code HTTP du dernier appel (None si la requête n'a pas abouti). Sert à
+# distinguer « l'hôte nous bloque » (403, inutile d'insister 300 fois) de
+# « l'hôte est lent » (il faut réessayer).
+DERNIER_CODE: int | None = None
+
 
 def _get(url: str, entetes=None, timeout=45) -> bytes | None:
+    global DERNIER_CODE
+    DERNIER_CODE = None
     # La liste alimente le rapport d'exécution : on garde le début (la première
     # erreur est la plus parlante) et la fin, sans jamais croître sans limite.
     if len(DERNIERES_ERREURS) >= 40:
@@ -88,8 +95,10 @@ def _get(url: str, entetes=None, timeout=45) -> bytes | None:
     try:
         req = urllib.request.Request(url, headers=entetes or ENTETES)
         with urllib.request.urlopen(req, timeout=timeout) as r:
+            DERNIER_CODE = r.status
             return r.read()
     except urllib.error.HTTPError as e:
+        DERNIER_CODE = e.code
         msg = f"HTTP {e.code} sur {url[:90]}"
         print(f"    ! {msg}")
         DERNIERES_ERREURS.append(msg)
@@ -321,6 +330,7 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
     """
     print("    → repli sur le scoreboard ESPN")
     par_match: dict[str, dict] = {}
+    refus = 0                       # 403 consécutifs : l'hôte bloque ce serveur
     b = jusqu_a
     while b >= depart and time.time() < budget:
         a = max(b - dt.timedelta(days=FENETRE_ESPN - 1), depart)
@@ -329,7 +339,17 @@ def _maj_basket_espn(depart: dt.date, jusqu_a: dt.date, budget: float) -> dict:
             continue                            # intersaison : aucun match
         url = ESPN_BASKET.format(a=a.strftime("%Y%m%d"), b=b.strftime("%Y%m%d"))
         brut = _get(url, timeout=20)
+        if not brut:
+            # Un 403 ne se soigne pas en insistant : les serveurs de GitHub sont
+            # bloqués par la protection anti-robot. Trois refus d'affilée et on
+            # arrête, au lieu de brûler 330 requêtes pour rien.
+            refus = refus + 1 if DERNIER_CODE == 403 else 0
+            if refus >= 3:
+                print("    ! 403 à répétition : cet hôte bloque le serveur, "
+                      "on arrête le repli")
+                break
         if brut:
+            refus = 0
             try:
                 evs = json.loads(brut).get("events", [])
             except (json.JSONDecodeError, AttributeError):

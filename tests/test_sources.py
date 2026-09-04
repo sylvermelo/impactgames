@@ -144,6 +144,54 @@ class TestRepliEspn(unittest.TestCase):
             sources._get = original
         self.assertEqual(r, {})
 
+    def test_abandon_rapide_sur_403(self):
+        """Depuis les serveurs de GitHub, stats.nba.com ET ESPN répondent 403
+        (protection anti-robot). Insister 330 fois ne change rien et coûte trois
+        minutes à chaque exécution."""
+        class Refus:
+            def __init__(self):
+                self.urls = []
+
+            def __call__(self, url, entetes=None, timeout=45):
+                self.urls.append(url)
+                sources.DERNIER_CODE = 403
+                return None
+
+        bouchon = Refus()
+        avant = (sources._get, sources.PAUSE_ESPN, sources.DERNIER_CODE)
+        sources._get, sources.PAUSE_ESPN = bouchon, 0.0
+        try:
+            r = sources._maj_basket_espn(dt.date(2024, 10, 1),
+                                         dt.date(2025, 1, 20), time.time() + 30)
+        finally:
+            (sources._get, sources.PAUSE_ESPN,
+             sources.DERNIER_CODE) = avant
+        self.assertEqual(r, {})
+        self.assertEqual(len(bouchon.urls), 3, "il faut abandonner après 3 refus")
+
+    def test_les_echecs_non_403_n_arretent_pas(self):
+        """Un hôte lent ou en panne n'est pas un hôte qui nous bloque : là il
+        faut continuer, sinon une panne passagère vide la base de données."""
+        class Panne:
+            def __init__(self):
+                self.urls = []
+
+            def __call__(self, url, entetes=None, timeout=45):
+                self.urls.append(url)
+                sources.DERNIER_CODE = None      # timeout, pas refus
+                return None
+
+        bouchon = Panne()
+        avant = (sources._get, sources.PAUSE_ESPN, sources.DERNIER_CODE)
+        sources._get, sources.PAUSE_ESPN = bouchon, 0.0
+        try:
+            sources._maj_basket_espn(dt.date(2024, 10, 1),
+                                     dt.date(2025, 1, 20), time.time() + 30)
+        finally:
+            (sources._get, sources.PAUSE_ESPN,
+             sources.DERNIER_CODE) = avant
+        self.assertEqual(len(bouchon.urls), 23, "toutes les fenêtres doivent être tentées")
+
     def test_lignes_incompletes_ecartees(self):
         bruts = {
             "ok": {"date": "2025-01-01", "domicile": "BOS", "exterieur": "LAL",

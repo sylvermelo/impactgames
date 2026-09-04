@@ -28,12 +28,16 @@ permissions:
   # avalée par le `|| echo`) et un échec de tests devenait indiagnosticable.
   contents: write
   pages: write
-  # La doc GitHub est explicite : créer un site Pages demande « Pages (write) »
-  # ET « Administration (write) ». Sans le second, POST /repos/.../pages renvoie
-  # 403 « Resource not accessible by integration » (constaté dans data/pages.log
-  # du run 33912833022).
-  administration: write
   id-token: write
+  # NOTE — `administration: write` est INTERDIT ici : ce n'est pas une clé
+  # reconnue pour GITHUB_TOKEN, et GitHub rejette tout le fichier
+  # (« This run likely failed because of a workflow file issue », run 33913899678).
+  # Or créer un site Pages (POST /repos/.../pages) exige d'après la doc
+  # « Pages (write) » ET « Administration (write) » — d'où le 403 « Resource not
+  # accessible by integration » lu dans data/pages.log. Conclusion : un workflow
+  # ne peut PAS activer Pages. C'est un réglage à faire une fois à la main :
+  # Settings → Pages → Source « GitHub Actions ». L'étape « Expliquer pourquoi
+  # Pages a refusé » garde la preuve dans data/pages.log.
 
 # une seule exécution à la fois : la plus ancienne s'arrête
 concurrency:
